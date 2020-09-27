@@ -1,0 +1,134 @@
+/*!
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2020 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+namespace Runtime.Web.Auth;
+
+use Runtime.Exceptions.RuntimeException;
+use Runtime.Crypt.JWT;
+use Runtime.Core.RemoteCallAnswer;
+use Runtime.Core.RemoteCallRequest;
+use Runtime.Web.Cookie;
+use Runtime.Web.RenderContainer;
+use Runtime.Web.Auth.AuthToken;
+
+
+static class AuthBackend
+{
+	static const string CHAIN_LOGIN = "Runtime.Web.Auth.Login";
+	static const string CHAIN_LOGOUT = "Runtime.Web.Auth.Logount";
+	static const string CHAIN_CHECK_TOKEN = "Runtime.Web.Auth.CheckToken";
+	
+	
+	/**
+	 * Save Auth Token in keep data
+	 */
+	static list renderChainChangeLayoutModel(RenderContainer container)
+	{
+		int time = rtl::time();
+		
+		/* Get cookie and auth public key */
+		string cookie_name = @.config(["Runtime.Web.Auth", "COOKIE_NAME"]);
+		string auth_public_key = @.config(["Runtime.Web.Auth", "AUTH_PUBLIC_KEY"]);
+		Cookie auth_cookie = container["request", "cookies", cookie_name] |> default Cookie null;
+		
+		if (auth_cookie == null) return [ container ];
+		AuthToken token = static::parse(auth_cookie.value, auth_public_key);
+		
+		/* Check token */
+		list res = await @.chainAsync(AuthBackend::CHAIN_CHECK_TOKEN, [token]);
+		AuthToken token = res[0] |> default AuthToken null;
+		
+		if (token == null) return [ container ];
+		if (time > token.expire) return [ container ];
+		
+		/* Set auth token */
+		container <= layout <= keep_data <= { classof AuthToken } <= token;
+		container <= backend_storage <= { classof AuthToken } <= token;
+		
+		return [ container ];
+	}
+	
+	
+	
+	/**
+	 * Api routes storage chain
+	 */
+	static async list apiExternalBusPrepareChain(RenderContainer container, RemoteCallRequest request)
+	{
+		/* Add token */
+		AuthToken token = container["backend_storage", classof AuthToken] |> default AuthToken null;
+		request <= storage <= "Runtime.Web.Auth" <= { classof AuthToken } <= token;
+		
+		return [ container, request ];
+	}
+	
+	
+	
+	/**
+	 * Check auth token
+	 */
+	static async RenderContainer apiCheckAuthMiddleware(RemoteCallRequest request, RemoteCallAnswer answer)
+	{
+		AuthToken auth_token = request["storage", "Runtime.Web.Auth", classof AuthToken] |> default AuthToken null;
+		if (auth_token == null)
+		{
+			throw new RuntimeException(_("Runtime.Web.Auth", "Unauthorized"), rtl::ERROR_AUTH);
+		}
+		
+		return [ request, answer ];
+	}
+	
+	
+	
+	/**
+	 * Parse token by auth_public_key
+	 */
+	pure AuthToken parse(string auth_token_str, string auth_public_key)
+	{
+		/* Decode jwt */
+		Dict d = JWT::decode(auth_token_str, auth_public_key, 'RS256');
+		if (d == null) return null;
+		return new AuthToken
+		{
+			"created": d.get("c", 0, "int"),
+			"expire": d.get("e", 0, "int"),
+			"user_id": d.get("i", 0, "int"),
+			"login": d.get("u", 0, "string"),
+			"session_key": d.get("s", 0, "string"),
+			"token_str": auth_token_str,
+		};
+	}
+	
+	
+	
+	/**
+	 * Create new token
+	 */
+	pure AuthToken sign(AuthToken token, string auth_private_key)
+	{
+		Dict d = {
+			"c": token.created,
+			"e": token.expire,
+			"u": token.login,
+			"i": token.user_id,
+			"s": token.session_key,
+		};
+		string auth_token_str = JWT::encode(d, auth_private_key, 'RS256');
+		return token.copy{ "token_str": auth_token_str };
+	}
+}

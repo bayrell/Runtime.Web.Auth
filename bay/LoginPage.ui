@@ -1,0 +1,197 @@
+<!--
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2020 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+-->
+
+<class version="1.0"
+	name="Runtime.Web.Auth.LoginPage" extends="Runtime.Web.Component" 
+	module="Runtime.Web.Auth" model="Runtime.Web.Auth.LoginPageModel"
+>
+
+<use name="Runtime.Exceptions.RuntimeException" />
+<use name="Runtime.Core.Message" />
+<use name="Runtime.Core.RemoteCallAnswer" />
+<use name="Runtime.Web.LayoutModel" />
+<use name="Runtime.Web.RenderContainer" />
+<use name="Runtime.Web.RenderDriver" />
+<use name="Runtime.Web.Route" />
+<use name="Runtime.Web.RouteList" />
+<use name="Runtime.Web.Auth.LoginPage" />
+<use name="Runtime.Web.Auth.LoginPageModel" />
+<use name="Runtime.Web.Events.MouseClickEvent" />
+<use name="Runtime.Web.CRUD.CrudPage" component="true" />
+<use name="Runtime.Web.CRUD.CrudPageModel" />
+<use name="Runtime.Web.CRUD.FieldInfo" />
+<use name="Runtime.Web.Input.Button" component="true" />
+<use name="Runtime.Web.Input.Input" component="true" />
+<use name="Runtime.Web.Input.Label" component="true" />
+<use name="Runtime.Web.Input.Select" component="true" />
+<use name="Runtime.Web.Input.SelectText" component="true" />
+<use name="Runtime.Web.Table.TableModel" />
+
+
+<script>
+
+/**
+ * Route Action
+ * @return RenderContainer
+ */
+@Route{ "uri": "/login/", "name": "app.login" }
+static async RenderContainer actionIndex(RenderContainer container)
+{
+	LoginPageModel page_model = new LoginPageModel();
+	
+	/* Set title */
+	container <= layout <= title <= "Login page";
+	container <= layout <= layout_name <= "default";
+	
+	/* Set model */
+	container <= layout <= page_class <= classof LoginPage;
+	container <= layout <= page_model <= page_model;
+	
+	return [ container ];
+}
+
+</script>
+
+
+
+<style>
+%content{
+	text-align: center;
+	padding-top: 50px;
+	width: 500px;
+	margin-left: auto;
+	margin-right: auto;
+}
+%row{
+	text-align: left;
+}
+%head{
+	font-weight: bold;
+}
+%wrap{
+	padding-bottom: 20px;
+}
+%label{
+	padding-bottom: 5px;
+}
+%label label{
+}
+%message{
+}
+%result.success{
+	color: ${ vars["colors", "success", "color"] };
+}
+%result.error{
+	color: ${ vars["colors", "error", "color"] };
+}
+</style>
+
+
+<template name="render">
+	<div class='content' @key='content'>
+			
+		<div class='wrap head'>
+			Login
+		</div>
+		
+		<div class='wrap'>
+			<div class='row label'>
+				<label for='auth-username'>Username</label>
+			</div>
+			<div class='row input'>
+				<Input @name="username" name='username' id='auth-username' />
+			</div>
+		</div>
+		
+		<div class='wrap'>
+			<div class='row label'>
+				<label for='auth-password'>Password</label>
+			</div>
+			<div class='row input'>
+				<Input type='password' @name="password" name='password' id='auth-password' />
+			</div>
+		</div>
+		
+		<div class='wrap'>
+			<Button type='primary' @event:MouseClickEvent='onLoginClick'>Login</Button>
+		</div>
+		
+		<div class='wrap result' class={ static::getResultClass(model) }>
+			{ model.get("message", "") }
+			{ model.get("success_message", "") }
+			{ model.get("error_message", "") }
+		</div>
+		
+	</div>
+</template>
+
+
+<script type="frontend">
+
+/**
+ * Returns result class
+ */
+pure string getResultClass(LoginPageModel model)
+{
+	if (model.get("success_message", "") != "") return "success";
+	if (model.get("error_message", "") != "") return "error";
+	return "";
+}
+
+
+/**
+ * Mouse click event
+ */
+async void onLoginClick(MouseClickEvent e)
+{
+	LoginPageModel model = this.model();
+	
+	/* Set wait message */
+	this.update("setWaitMessage");
+	
+	/* Login */
+	RemoteCallAnswer answer = await RenderDriver::remoteBusCall
+	(
+		{
+			"object_name": "Runtime.Web.Auth",
+			"interface_name": "core.auth",
+			"method_name": "login",
+			"data":
+			{
+				"username": model.username,
+				"password": model.password,
+			}
+		}
+	);
+	
+	/* Set answer */
+	this.update("setAnswer", answer);
+	
+	/* Redirect */
+	if (answer.isSuccess())
+	{
+		#ifcode JAVASCRIPT then
+		document.location = document.location;
+		#endif
+	}
+}
+
+</script>
+
+
+</class>

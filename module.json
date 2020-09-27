@@ -1,0 +1,11 @@
+{
+	"name": "Runtime.Web.Auth",
+	"assets":
+	[
+		"AuthFrontend",
+		"AuthToken",
+		"LoginPage",
+		"LoginPageModel",
+		"ModuleDescription"
+	]
+}

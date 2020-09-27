@@ -1,0 +1,85 @@
+/*!
+ *  Bayrell Runtime Library
+ *
+ *  (c) Copyright 2016-2020 "Ildar Bikmamatov" <support@bayrell.org>
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+ 
+namespace Runtime.Web.Auth;
+
+use Runtime.Core.Entity;
+use Runtime.Core.LambdaChain;
+use Runtime.Web.RenderDriver;
+
+
+static class ModuleDescription
+{
+	
+	/**
+	 * Returns module name
+	 * @return string
+	 */
+	pure string getModuleName() => "Runtime.Web.Auth";
+	
+	
+	/**
+	 * Returns module name
+	 * @return string
+	 */
+	pure string getModuleVersion() => "0.1.0";
+	
+	
+	
+	/**
+	 * Returns required modules
+	 * @return Map<string>
+	 */	
+	pure Map<string> requiredModules() =>
+	{
+		"Runtime.Web": "*",
+		"Runtime.Web.Input": "*",
+	};
+	
+	
+	
+	/**
+	 * Returns enities
+	 */
+	pure Collection<Dict> entities() =>
+	[
+		#ifdef BACKEND then
+		
+		/* Register api */
+		new Entity{ "name": "Runtime.Web.Auth.AuthApi" },
+		
+		/* Render Chain. Create layout model */
+		new LambdaChain
+		{
+			"name": RenderDriver::RENDER_CHAIN,
+			"value": "Runtime.Web.Auth.AuthBackend::renderChainChangeLayoutModel",
+			"pos": RenderDriver::RENDER_CHAIN_CHANGE_LAYOUT_MODEL,
+		},
+		
+		/* External bus storage */
+		new LambdaChain
+		{
+			"name": RenderDriver::API_EXTERNAL_BUS_PREPARE_CHAIN,
+			"value": "Runtime.Web.Auth.AuthBackend::apiExternalBusPrepareChain",
+		},
+		
+		#endif
+		
+	];
+	
+}
