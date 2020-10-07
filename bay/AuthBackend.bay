@@ -68,13 +68,16 @@ static class AuthBackend
 	/**
 	 * Api routes storage chain
 	 */
-	static async list apiExternalBusPrepareChain(RenderContainer container, RemoteCallRequest request)
+	static async list apiExternalBusPrepareChain(RemoteCallRequest request, RenderContainer container = null)
 	{
 		/* Add token */
-		AuthToken token = container["backend_storage", classof AuthToken] |> default AuthToken null;
-		request <= storage <= "Runtime.Web.Auth" <= { classof AuthToken } <= token;
+		if (container)
+		{
+			AuthToken token = container["backend_storage", classof AuthToken] |> default AuthToken null;
+			request <= storage <= "Runtime.Web.Auth" <= { classof AuthToken } <= token;
+		}
 		
-		return [ container, request ];
+		return [ request, container ];
 	}
 	
 	
