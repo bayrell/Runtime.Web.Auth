@@ -165,7 +165,7 @@ async void onLoginClick(MouseClickEvent e)
 	this.update("setWaitMessage");
 	
 	/* Login */
-	RemoteCallAnswer answer = await RenderDriver::remoteBusCall
+	RemoteCallAnswer answer = await RenderDriver::externalBusCall
 	(
 		{
 			"object_name": "Runtime.Web.Auth",

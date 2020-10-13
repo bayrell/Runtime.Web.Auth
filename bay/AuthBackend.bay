@@ -58,7 +58,7 @@ static class AuthBackend
 		
 		/* Set auth token */
 		container <= layout <= keep_data <= { classof AuthToken } <= token;
-		container <= backend_storage <= { classof AuthToken } <= token;
+		container <= api_storage <= { classof AuthToken } <= token;
 		
 		return [ container ];
 	}
@@ -74,7 +74,7 @@ static class AuthBackend
 		if (container)
 		{
 			AuthToken token = container["backend_storage", classof AuthToken] |> default AuthToken null;
-			request <= storage <= "Runtime.Web.Auth" <= { classof AuthToken } <= token;
+			request <= storage <= { classof AuthToken } <= token;
 		}
 		
 		return [ request, container ];
@@ -87,7 +87,7 @@ static class AuthBackend
 	 */
 	static async RenderContainer apiCheckAuthMiddleware(RemoteCallRequest request, RemoteCallAnswer answer)
 	{
-		AuthToken auth_token = request["storage", "Runtime.Web.Auth", classof AuthToken] |> default AuthToken null;
+		AuthToken auth_token = request["storage", classof AuthToken] |> default AuthToken null;
 		if (auth_token == null)
 		{
 			throw new RuntimeException(_("Runtime.Web.Auth", "Unauthorized"), rtl::ERROR_AUTH);
