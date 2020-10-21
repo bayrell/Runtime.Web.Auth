@@ -39,6 +39,7 @@ static class AuthBackend
 	 */
 	static list renderChainChangeLayoutModel(RenderContainer container)
 	{
+		AuthToken token = null;
 		int time = rtl::time();
 		
 		/* Get cookie and auth public key */
@@ -46,12 +47,16 @@ static class AuthBackend
 		string auth_public_key = @.config(["Runtime.Web.Auth", "AUTH_PUBLIC_KEY"]);
 		Cookie auth_cookie = container["request", "cookies", cookie_name] |> default Cookie null;
 		
-		if (auth_cookie == null) return [ container ];
-		AuthToken token = static::parse(auth_cookie.value, auth_public_key);
+		/* Parse token */
+		if (auth_cookie != null)
+		{
+			token = static::parse(auth_cookie.value, auth_public_key);
+		}
 		
 		/* Check token */
-		list res = await @.chainAsync(AuthBackend::CHAIN_CHECK_TOKEN, [token]);
-		AuthToken token = res[0] |> default AuthToken null;
+		list res = await @.chainAsync(AuthBackend::CHAIN_CHECK_TOKEN, [container, token]);
+		AuthToken token = res[1] |> default AuthToken null;
+		container = res[0];
 		
 		if (token == null) return [ container ];
 		if (time > token.expire) return [ container ];
@@ -66,26 +71,9 @@ static class AuthBackend
 	
 	
 	/**
-	 * Api routes storage chain
-	 */
-	static async list apiExternalBusPrepareChain(RemoteCallRequest request, RenderContainer container = null)
-	{
-		/* Add token */
-		if (container)
-		{
-			AuthToken token = container["backend_storage", classof AuthToken] |> default AuthToken null;
-			request <= storage <= { classof AuthToken } <= token;
-		}
-		
-		return [ request, container ];
-	}
-	
-	
-	
-	/**
 	 * Check auth token
 	 */
-	static async RenderContainer apiCheckAuthMiddleware(RemoteCallRequest request, RemoteCallAnswer answer)
+	static async RenderContainer checkAuthMiddlewareApi(RemoteCallRequest request, RemoteCallAnswer answer)
 	{
 		AuthToken auth_token = request["storage", classof AuthToken] |> default AuthToken null;
 		if (auth_token == null)

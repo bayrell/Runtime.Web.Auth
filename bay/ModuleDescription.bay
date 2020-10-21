@@ -71,13 +71,6 @@ static class ModuleDescription
 			"pos": RenderDriver::RENDER_CHAIN_CHANGE_LAYOUT_MODEL,
 		},
 		
-		/* External bus storage */
-		new LambdaChain
-		{
-			"name": RenderDriver::API_EXTERNAL_BUS_PREPARE_CHAIN,
-			"value": "Runtime.Web.Auth.AuthBackend::apiExternalBusPrepareChain",
-		},
-		
 		#endif
 		
 	];
