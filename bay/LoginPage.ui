@@ -40,7 +40,6 @@
 <use name="Runtime.Web.Input.Label" component="true" />
 <use name="Runtime.Web.Input.Select" component="true" />
 <use name="Runtime.Web.Input.SelectText" component="true" />
-<use name="Runtime.Web.Table.TableModel" />
 
 
 <script>
