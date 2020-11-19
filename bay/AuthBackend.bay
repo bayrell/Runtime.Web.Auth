@@ -21,9 +21,9 @@ namespace Runtime.Web.Auth;
 use Runtime.Exceptions.ApiException;
 use Runtime.Exceptions.RuntimeException;
 use Runtime.Crypt.JWT;
+use Runtime.Core.Cookie;
 use Runtime.Core.RemoteCallAnswer;
 use Runtime.Core.RemoteCallRequest;
-use Runtime.Web.Cookie;
 use Runtime.Web.RenderContainer;
 use Runtime.Web.Auth.AuthToken;
 
