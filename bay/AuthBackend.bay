@@ -84,7 +84,9 @@ static class AuthBackend
 		
 		return [ request, answer ];
 	}
-	
+	static async RenderContainer checkAuthMiddleware(RemoteCallRequest request, RemoteCallAnswer answer)
+		=> await static::checkAuthMiddleware(request, answer);
+		
 	
 	
 	/**
